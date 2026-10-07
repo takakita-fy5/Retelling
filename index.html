@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Retelling Quest v3</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--ink:#243044;--sub:#65748b;--accent:#5b67d8;--accent2:#8b5cf6;--ok:#198754;--line:#e5e9f2}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif}
+header{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;padding:22px 18px;text-align:center}
+header h1{margin:0 0 5px;font-size:27px}header p{margin:0;opacity:.92}
+main{max-width:900px;margin:22px auto;padding:0 14px}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;margin-bottom:16px;box-shadow:0 5px 18px #23304a10}
+h2{font-size:20px;margin:0 0 14px}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+label{font-weight:700;font-size:14px;display:block;margin-bottom:6px}input,textarea,select{width:100%;padding:11px 12px;border:1px solid #cfd6e4;border-radius:11px;font:inherit;background:#fff}
+textarea{min-height:150px;resize:vertical}.small{font-size:13px;color:var(--sub)}button{border:0;border-radius:11px;padding:11px 16px;font:inherit;font-weight:700;cursor:pointer;background:var(--accent);color:#fff}
+button.secondary{background:#eef0ff;color:#424db0}button.gray{background:#edf0f4;color:#475569}button:disabled{opacity:.45;cursor:not-allowed}
+.nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:15px}.nav button.active{background:#3f4cc2}
+.badge{display:inline-block;padding:4px 9px;border-radius:999px;background:#eef0ff;color:#4652bd;font-size:12px;font-weight:700}
+.hidden{display:none}.center{text-align:center}.big{font-size:42px;font-weight:800}.scoregrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.score{background:#f8f9fc;border-radius:14px;padding:12px;text-align:center}.score b{font-size:25px}.pill{display:inline-block;background:#f0f4ff;border-radius:9px;padding:6px 9px;margin:4px;font-size:13px}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.step{padding:10px;border-radius:12px;background:#f5f6fa;text-align:center;font-size:13px}.step.on{background:#e9eaff;color:#3f4cc2;font-weight:800}
+.advice{background:#f7f2ff;border-left:5px solid var(--accent2);padding:14px;border-radius:10px;line-height:1.7}
+.hintbox{background:#fff8e7;border:1px solid #f2d68b;padding:13px;border-radius:12px;line-height:1.7}
+.timer{font-size:34px;font-weight:800;text-align:center;margin:6px}
+.transcript{min-height:130px}.modebuttons{display:flex;gap:8px;flex-wrap:wrap}.modebuttons button.selected{outline:3px solid #c7ccff}
+ul{line-height:1.8}@media(max-width:650px){.row,.scoregrid,.steps{grid-template-columns:1fr 1fr}.scoregrid .score:nth-child(n+3){margin-top:0}}@media(max-width:430px){.scoregrid,.steps{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<header><h1>🎤 Retelling Quest v3</h1><p>考える → 話す → 振り返る</p></header>
+<main>
+
+<div class="nav">
+<button id="teacherTab" class="active" onclick="showPage('teacher')">先生モード</button>
+<button id="studentTab" onclick="showPage('student')">生徒モード</button>
+</div>
+
+<section id="teacherPage">
+<div class="card">
+<h2>🧑‍🏫 ① 授業を準備</h2>
+<div class="row">
+<div><label>授業タイトル</label><input id="title" placeholder="例：Lesson 4 Environmental Problems"></div>
+<div><label>レベル</label>
+<select id="level">
+<option value="1">Level 1：日本語で整理</option>
+<option value="2">Level 2：日本語→英語</option>
+<option value="3">Level 3：英語リテリング</option>
+<option value="4">Level 4：フリーリテリング</option>
+</select></div>
+</div>
+<br>
+<label>教科書本文（先生だけが見る）</label>
+<textarea id="source" placeholder="ここに既習の教科書本文を貼り付けます。生徒には表示されません。"></textarea>
+<br><br>
+<div class="row">
+<div><label>キーワード（任意・カンマ区切り）</label><input id="keywords" placeholder="environment, recycle, future"></div>
+<div><label>日本語ヒント（任意）</label><input id="jphint" placeholder="問題→原因→解決策"></div>
+</div>
+<br>
+<button onclick="saveLesson()">💾 授業を作成</button>
+<p id="teacherMsg" class="small"></p>
+</div>
+
+<div class="card">
+<h2>💡 想定する授業の流れ</h2>
+<div class="steps">
+<div class="step on">① 準備</div><div class="step">② 話す</div><div class="step">③ チェック</div><div class="step">④ 次の一歩</div>
+</div>
+<ul>
+<li>教科書はすでに学習済み。リテリング前に自分の言う内容を準備。</li>
+<li>苦手な生徒は日本語で内容を整理してOK。</li>
+<li>できる生徒は最初から英語で準備・リテリング。</li>
+<li>音声そのものは保存せず、文字起こしだけを一時的に使う設計。</li>
+</ul>
+</div>
+</section>
+
+<section id="studentPage" class="hidden">
+<div class="card">
+<div class="badge" id="studentLevel"></div>
+<h2 id="studentTitle">Retelling</h2>
+<div class="steps">
+<div id="s1" class="step on">① 準備</div><div id="s2" class="step">② 話す</div><div id="s3" class="step">③ チェック</div><div id="s4" class="step">④ 次の一歩</div>
+</div>
+</div>
+
+<div id="prepareCard" class="card">
+<h2>📝 ① リテリングを準備しよう</h2>
+<p id="prepareInstruction"></p>
+<div id="prepareHint" class="hintbox"></div>
+<label style="margin-top:14px">自分の準備メモ</label>
+<textarea id="prepText" placeholder="話す内容を自分の言葉で整理しよう。日本語でも英語でもOK。"></textarea>
+<br><br>
+<button onclick="goSpeak()">準備OK！ → 話してみる</button>
+</div>
+
+<div id="speakCard" class="card hidden">
+<h2>🎤 ② 教科書を見ずに話そう</h2>
+<div class="modebuttons">
+<button id="enBtn" class="selected" onclick="setMode('en')">🇬🇧 英語で話す</button>
+<button id="jaBtn" onclick="setMode('ja')">🇯🇵 日本語で話す</button>
+</div>
+<div class="timer" id="timer">60</div>
+<p class="center small">音声は保存しません。対応ブラウザでは話した内容を文字起こしします。</p>
+<button id="startBtn" onclick="startSpeech()">🎙️ 話し始める</button>
+<button id="stopBtn" class="gray" onclick="stopSpeech()" disabled>⏹ 終了</button>
+<textarea id="transcript" class="transcript" placeholder="ここに文字起こしが入ります。うまく認識されなければ直接入力してOK。"></textarea>
+<br><br><button onclick="evaluate()">📊 チェックする</button>
+</div>
+
+<div id="resultCard" class="card hidden">
+<h2>📊 ③ あなたのリテリングチェック</h2>
+<div class="scoregrid">
+<div class="score">内容<br><b id="scContent">-</b></div>
+<div class="score">語彙<br><b id="scVocab">-</b></div>
+<div class="score">文法<br><b id="scGrammar">-</b></div>
+<div class="score">伝わり方<br><b id="scFluency">-</b></div>
+</div>
+<br>
+<div id="resultText" class="advice"></div>
+</div>
+
+<div id="nextCard" class="card hidden">
+<h2>🌱 ④ 次の一歩</h2>
+<div id="nextAdvice" class="advice"></div>
+<br>
+<button onclick="retry()">🔁 もう一度やってみる</button>
+<button class="secondary" onclick="finish()">✓ ここまで</button>
+</div>
+</section>
+</main>
+
+<script>
+let lesson={title:"Retelling Quest",level:"1",source:"",keywords:[],jphint:""};
+let mode="en",recognition=null,timerId=null,seconds=60,remaining=60,interim="";
+const $=id=>document.getElementById(id);
+
+function showPage(p){
+ $("teacherPage").classList.toggle("hidden",p!=="teacher");
+ $("studentPage").classList.toggle("hidden",p!=="student");
+ $("teacherTab").classList.toggle("active",p==="teacher");
+ $("studentTab").classList.toggle("active",p==="student");
+ if(p==="student") loadStudent();
+}
+function saveLesson(){
+ lesson.title=$("title").value||"Retelling Quest";
+ lesson.level=$("level").value;
+ lesson.source=$("source").value;
+ lesson.keywords=$("keywords").value.split(",").map(x=>x.trim()).filter(Boolean);
+ lesson.jphint=$("jphint").value;
+ localStorage.setItem("retellingQuestLesson",JSON.stringify(lesson));
+ $("teacherMsg").textContent="✅ 保存しました。「生徒モード」を押すと生徒画面を確認できます。";
+}
+function loadStudent(){
+ let x=localStorage.getItem("retellingQuestLesson");
+ if(x) lesson=JSON.parse(x);
+ $("studentTitle").textContent=lesson.title;
+ const names={1:"Level 1：日本語で整理",2:"Level 2：日本語→英語",3:"Level 3：英語リテリング",4:"Level 4：フリーリテリング"};
+ $("studentLevel").textContent=names[lesson.level]||names[1];
+ let instructions={
+ 1:"まずは内容を自分の言葉で日本語にまとめよう。英語にする必要はありません。",
+ 2:"日本語で考えた内容をもとに、話せそうな英単語・表現も準備してみよう。",
+ 3:"伝えたい内容を英語で準備してみよう。難しい表現は簡単な英語に置き換えてOK。",
+ 4:"自分の言葉で自由に説明するための準備をしよう。"
+ };
+ $("prepareInstruction").textContent=instructions[lesson.level]||instructions[1];
+ $("prepareHint").innerHTML=(lesson.jphint?("💡 ヒント："+esc(lesson.jphint)+"<br>"):"")+"教科書本文はリテリング中には表示されません。";
+ $("prepText").value="";
+ resetCards();
+}
+function resetCards(){
+ $("prepareCard").classList.remove("hidden");$("speakCard").classList.add("hidden");$("resultCard").classList.add("hidden");$("nextCard").classList.add("hidden");
+ setStep(1);
+}
+function setStep(n){for(let i=1;i<=4;i++)$("s"+i).classList.toggle("on",i===n)}
+function goSpeak(){
+ if(!$("prepText").value.trim()){alert("まずはリテリングの準備メモを作ってみよう！");return}
+ $("prepareCard").classList.add("hidden");$("speakCard").classList.remove("hidden");setStep(2);resetTimer();
+}
+function setMode(m){
+ mode=m;$("enBtn").classList.toggle("selected",m==="en");$("jaBtn").classList.toggle("selected",m==="ja");
+ $("transcript").value="";
+}
+function resetTimer(){remaining=60;$("timer").textContent=remaining;clearInterval(timerId)}
+function startSpeech(){
+ $("startBtn").disabled=true;$("stopBtn").disabled=false;resetTimer();
+ timerId=setInterval(()=>{remaining--;$("timer").textContent=remaining;if(remaining<=0)stopSpeech()},1000);
+ const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!SR){alert("このブラウザでは音声認識が利用できません。下の欄に直接入力してください。");return}
+ recognition=new SR();recognition.lang=mode==="en"?"en-US":"ja-JP";recognition.continuous=true;recognition.interimResults=true;
+ recognition.onresult=e=>{
+   let finalText="";
+   for(let i=0;i<e.results.length;i++){let t=e.results[i][0].transcript;if(e.results[i].isFinal)finalText+=t;else interim=t}
+   let current=$("transcript").value;
+   if(finalText) $("transcript").value=(current+" "+finalText).trim();
+ };
+ recognition.onend=()=>{$("startBtn").disabled=false;$("stopBtn").disabled=true};
+ recognition.start();
+}
+function stopSpeech(){
+ clearInterval(timerId);timerId=null;
+ if(recognition){try{recognition.stop()}catch(e){}}
+ $("startBtn").disabled=false;$("stopBtn").disabled=true;
+}
+function words(s){return (s.toLowerCase().match(/[a-z]+/g)||[])}
+function evaluate(){
+ stopSpeech();
+ let text=$("transcript").value.trim();
+ if(!text){alert("リテリング内容を入力してね！");return}
+ let w=words(text), count=w.length;
+ let sourceWords=words(lesson.source), sourceSet=new Set(sourceWords);
+ let kws=lesson.keywords.length?lesson.keywords.map(x=>x.toLowerCase()):sourceWords.filter(x=>x.length>=5).slice(0,12);
+ let hit=kws.filter(k=>text.toLowerCase().includes(k)).length;
+ let content=Math.min(100,35+Math.round((hit/Math.max(1,kws.length))*65));
+ let vocab=Math.min(100,45+Math.min(50,w.length*2));
+ let grammar=mode==="ja"?85:Math.min(100,55+(/[.!?]/.test(text)?10:0)+(w.length>=15?15:0)+(new Set(w).size>=Math.min(10,w.length*.6)?20:0));
+ let fluency=Math.min(100,45+Math.min(50,Math.round(count*1.8)));
+ if(mode==="ja"){vocab=Math.min(100,60+Math.min(35,Math.round(count*.8)));grammar=90}
+ $("scContent").textContent=grade(content);$("scVocab").textContent=grade(vocab);$("scGrammar").textContent=grade(grammar);$("scFluency").textContent=grade(fluency);
+ let weakest=Math.min(content,vocab,grammar,fluency), advice="";
+ if(mode==="ja"){
+   advice="内容は日本語でしっかり整理できています。次は、今日のリテリングから<strong>大事な1〜2文だけ英語にする</strong>ことを目標にしてみよう。";
+ }else if(content<65){
+   advice="英語表現より先に、<strong>本文の大事なポイントを3つ</strong>思い出してみよう。全部言おうとしなくてOK！";
+ }else if(vocab<65){
+   advice="次は、今回使った表現から<strong>「もう一度使いたい英単語を3つ」</strong>選んで、言い換えに挑戦してみよう。";
+ }else if(grammar<65){
+   advice="伝えたい内容はできています。次は<strong>動詞の時制と主語</strong>を意識して、同じ内容をもう一度言ってみよう。";
+ }else{
+   advice="かなりいい感じ！次は<strong>教科書にない表現を1つ</strong>入れて、自分の言葉らしいリテリングにしてみよう。";
+ }
+ $("resultText").innerHTML=`<strong>${mode==="ja"?"日本語で内容を伝える力":"英語で伝える力"}をチェックしました。</strong><br>まずは点数より、「次に何を1つ改善するか」を意識しよう。`;
+ $("nextAdvice").innerHTML="🌱 "+advice;
+ $("speakCard").classList.add("hidden");$("resultCard").classList.remove("hidden");$("nextCard").classList.remove("hidden");setStep(4);
+}
+function grade(n){if(n>=90)return"★★★★★";if(n>=75)return"★★★★☆";if(n>=60)return"★★★☆☆";if(n>=45)return"★★☆☆☆";return"★☆☆☆☆"}
+function retry(){ $("resultCard").classList.add("hidden");$("nextCard").classList.add("hidden");$("speakCard").classList.remove("hidden");$("transcript").value="";setStep(2);resetTimer()}
+function finish(){alert("おつかれさま！先生に見せる必要がない場合、この結果はこの端末だけに表示されます。");}
+function esc(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+loadStudent();
+</script>
+</body>
+</html>
