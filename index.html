@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Retelling Quest v7 AI</title>
+<style>
+:root{--bg:#f4f6fb;--card:#fff;--ink:#243044;--sub:#65748b;--accent:#5965d8;--accent2:#8657d8;--line:#e2e7f0;--soft:#f7f8fc}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;line-height:1.55}header{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;text-align:center;padding:23px 15px}header h1{margin:0 0 5px;font-size:27px}header p{margin:0;opacity:.94}main{max-width:960px;margin:22px auto;padding:0 14px}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:19px;margin-bottom:15px;box-shadow:0 5px 18px #23304a0d}h2{font-size:20px;margin:0 0 13px}h3{font-size:17px;margin:0 0 10px}.nav,.actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}button{border:0;border-radius:10px;padding:11px 15px;font:inherit;font-weight:700;cursor:pointer;background:var(--accent);color:#fff}button.secondary{background:#eef0ff;color:#424db0}button.gray{background:#edf0f4;color:#475569}button:disabled{opacity:.45;cursor:not-allowed}.nav button.active{background:#3948bb}.hidden{display:none!important}label{display:block;font-size:14px;font-weight:700;margin:10px 0 6px}input,textarea{width:100%;padding:11px 12px;border:1px solid #cfd6e4;border-radius:10px;font:inherit;background:#fff;color:var(--ink)}textarea{min-height:105px;resize:vertical}.small{font-size:13px;color:var(--sub);line-height:1.65}.badge{display:inline-block;background:#eef0ff;color:#4652bd;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:700}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.modegrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.modecard{border:2px solid var(--line);border-radius:13px;padding:14px;cursor:pointer;background:#fff}.modecard.selected{border-color:var(--accent);background:#f7f7ff}.modecard h3{margin:7px 0}.bigicon{font-size:26px}.keyword{display:inline-block;background:#eef0ff;color:#3745ad;border-radius:8px;padding:6px 9px;margin:4px;font-weight:700}.hintbox{background:#fff8e7;border:1px solid #f2d68b;padding:12px;border-radius:11px;line-height:1.8}.segment{border:1px solid var(--line);border-radius:13px;padding:14px;margin:12px 0;background:#fff}.segment-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.segment-no{font-weight:800;color:#4652bd}.timer{font-size:27px;font-weight:800}.scoregrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.score{background:var(--soft);border-radius:11px;padding:10px;text-align:center;font-size:13px}.score b{display:block;font-size:20px;margin-top:4px}.sample{white-space:pre-wrap;line-height:1.7;background:#f8f9fc;border:1px solid var(--line);padding:12px;border-radius:10px;margin-top:9px}.result-segment{background:#f8f9fc;border:1px solid var(--line);padding:13px;border-radius:12px;margin:12px 0}.advice{background:#f7f2ff;border-left:5px solid var(--accent2);padding:13px;border-radius:10px;line-height:1.7}.rangeRow{display:flex;align-items:center;gap:12px}.rangeRow input{padding:0}.rangeVal{font-weight:800;min-width:48px;text-align:right}.status{min-height:1.4em}@media(max-width:680px){.grid2,.modegrid{grid-template-columns:1fr}.scoregrid{grid-template-columns:repeat(2,1fr)}.score:last-child{grid-column:span 2}}
+</style></head>
+<body>
+<header><h1>🎤 Retelling Quest v7 AI</h1><p>3つの段落を話して、AIから具体的なアドバイスをもらおう！</p></header>
+<main>
+<div class="nav"><button id="teacherTab" class="active" onclick="showPage('teacher')">先生モード</button><button id="studentTab" onclick="showPage('student')">生徒モード</button></div>
+<section id="teacherPage">
+ <div class="card"><h2>🧑‍🏫 授業を準備する</h2>
+  <label for="title">授業タイトル</label><input id="title" placeholder="例：Lesson 4 Environmental Problems">
+  <label for="source">教科書本文（先生用・AIには送信されません）</label><textarea id="source" placeholder="本文を貼り付けておくことができます"></textarea>
+  <label for="apiEndpoint">AI評価サーバーURL（Apps ScriptのウェブアプリURL）</label><input id="apiEndpoint" type="url" placeholder="https://script.google.com/macros/s/.../exec">
+  <label for="classCode">クラスコード（サーバー側にも同じコードを設定）</label><input id="classCode" type="password" autocomplete="off" placeholder="先生が決めた共有コード">
+  <p class="small">APIキーはこの画面やGitHubには入力しません。Google Apps Script側に安全に設定します。</p>
+  <p class="small">模範解答はAZKiと作成した英文を、下の3つの欄にそれぞれ貼り付けてください。サイト内で本文を抜き出して模範解答を自動生成する機能はありません。</p>
+  <div id="teacherSegments"></div>
+  <div class="actions"><button onclick="saveLesson()">授業設定を保存</button><button class="secondary" onclick="loadTeacher()">保存内容を読み込む</button><button class="secondary" onclick="exportLesson()">設定ファイルをダウンロード</button></div>
+  <p id="teacherMsg" class="small status" role="status"></p>
+ </div>
+ <div class="card"><h2>📌 2つの学習モード</h2><p><b>MODE 1：自分のメモ</b> — 生徒が紙に書いたメモを見ながら話します。アプリ内に準備メモ欄はありません。</p><p><b>MODE 2：キーワード</b> — 先生が段落ごとに設定したキーワードだけを表示します。</p><p class="small">設定はこのブラウザに保存されます。同じ端末・同じブラウザで生徒が開いてください。別の端末と設定を共有するにはサーバー等が必要です。</p></div>
+</section>
+<section id="studentPage" class="hidden">
+ <div class="card"><span class="badge" id="studentTitle">Retelling</span><h2>学習モードを選ぼう</h2>
+  <div class="modegrid">
+   <div id="mode1Card" class="modecard selected" onclick="chooseMode(1)"><div class="bigicon">📝</div><h3>MODE 1：自分のメモ</h3><p>紙に書いた自分のメモを見ながら話そう。</p><p class="small">アプリ内にメモ欄はありません。</p></div>
+   <div id="mode2Card" class="modecard" onclick="chooseMode(2)"><div class="bigicon">🔑</div><h3>MODE 2：キーワード</h3><p>先生が設定したキーワードをヒントに話そう。</p></div>
+  </div>
+  <div class="actions" style="margin-top:14px"><button onclick="startLesson()">3つの段落に挑戦する →</button></div>
+  <label for="lessonFile">先生から受け取った設定ファイル（JSON）</label><input id="lessonFile" type="file" accept="application/json,.json" onchange="importLesson(event)"><p class="small">自分の端末で初めて使う場合は、先生から配布された設定ファイルを読み込んでください。</p><p id="studentNotice" class="small status"></p>
+ </div>
+ <div id="practiceCard" class="card hidden"><h2>🎤 3つの段落をリテリングしよう</h2><p class="small">段落ごとに話して、文字起こしを確認・修正してください。マイクが使えない場合は直接入力できます。各段落の回答は最後にまとめて採点します。</p><div id="practiceSegments"></div>
+  <div class="segment"><h3>🗣️ 発音の振り返り</h3><label for="pronScore">3段落を通した発音の自己評価</label><div class="rangeRow"><input id="pronScore" type="range" min="1" max="5" value="3" oninput="updatePronLabel()"><span class="rangeVal" id="pronLabel">3 / 5</span></div><p class="small">5：はっきり伝わる／4：ほぼ伝わる／3：一部聞き返される／2：聞き取りにくい部分が多い／1：かなり伝わりにくい</p><p class="small">※発音は自己評価・先生評価です。ブラウザの音声認識は発音の正確さを採点できません。</p></div>
+  <div class="segment"><label style="display:flex;align-items:flex-start;gap:9px;font-weight:500"><input id="privacyConfirm" type="checkbox" style="width:auto;margin-top:4px;flex:0 0 auto">氏名・出席番号・住所・電話番号・メールアドレスなど、個人情報が英文に含まれていないことを確認しました。</label><p class="small">英文はAI評価のためGoogle Geminiに送信されます。個人情報や他人の情報は入力しないでください。</p></div><div class="actions"><button onclick="evaluateAll()">✨ AIで3段落まとめて評価する</button></div><p id="practiceStatus" class="small status" role="status"></p>
+ </div>
+ <div id="resultCard" class="card hidden"><h2>✨ AIリテリング評価</h2><div id="aiResult"></div><div class="actions"><button onclick="retryLesson()">🔁 もう一度挑戦</button><button class="secondary" onclick="finishLesson()">ここまで</button></div></div>
+</section>
+</main>
+<script>
+const KEY='retellingQuestLessonV7';
+let lesson={title:'Retelling Quest',source:'',apiUrl:'',classCode:'',segments:[{model:'',keywords:[]},{model:'',keywords:[]},{model:'',keywords:[]}]};
+let chosenMode=1,activeRecognition=null,activeSegment=0,timerId=null,remaining=60,recording=false,finalTranscript='';
+const $=id=>document.getElementById(id);
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function showPage(p){$('teacherPage').classList.toggle('hidden',p!=='teacher');$('studentPage').classList.toggle('hidden',p!=='student');$('teacherTab').classList.toggle('active',p==='teacher');$('studentTab').classList.toggle('active',p==='student');if(p==='student')loadStudent();}
+function buildTeacher(){ $('teacherSegments').innerHTML=lesson.segments.map((s,i)=>`<div class="segment"><div class="segment-head"><span class="segment-no">第${i+1}段落</span><span class="small">先生が入力</span></div><label for="model${i}">模範解答（英語）</label><textarea id="model${i}" placeholder="第${i+1}段落の短いリテリング英文を入力">${esc(s.model)}</textarea><label for="keys${i}">キーワード（MODE 2で表示・カンマまたは改行区切り）</label><textarea id="keys${i}" style="min-height:70px" placeholder="例：Edamoto, contacted, opened">${esc((s.keywords||[]).join(', '))}</textarea></div>`).join('');}
+function parseKeys(v){return v.split(/[\n,、，;；]+/).map(x=>x.trim()).filter(Boolean)}
+function saveLesson(){lesson.title=$('title').value.trim()||'Retelling Quest';lesson.source=$('source').value;lesson.apiUrl=$('apiEndpoint').value.trim();lesson.classCode=$('classCode').value.trim();lesson.segments=[0,1,2].map(i=>({model:$('model'+i).value.trim(),keywords:parseKeys($('keys'+i).value)}));try{localStorage.setItem(KEY,JSON.stringify(lesson));$('teacherMsg').textContent='✅ 3段落の模範解答とキーワードを保存しました。生徒モードで確認できます。';}catch(e){$('teacherMsg').textContent='保存できませんでした。ブラウザの設定を確認してください。';}}
+function loadTeacher(){try{const x=localStorage.getItem(KEY);if(x)lesson=normalize(JSON.parse(x));else{const old=localStorage.getItem('retellingQuestLessonV5');if(old){const v=JSON.parse(old);lesson={title:v.title||'Retelling Quest',source:v.source||'',segments:[{model:v.modelAnswer||'',keywords:v.keywords||[]},{model:'',keywords:[]},{model:'',keywords:[]}]};$('teacherMsg').textContent='v5の保存内容を読み込みました。第1段落に旧模範解答を移しています。残り2段落を入力してください。';}}}catch(e){}$('title').value=lesson.title||'';$('source').value=lesson.source||'';$('apiEndpoint').value=lesson.apiUrl||'';$('classCode').value=lesson.classCode||'';buildTeacher();}
+function normalize(x){let seg=Array.isArray(x.segments)?x.segments:[];return{title:x.title||'Retelling Quest',source:x.source||'',apiUrl:x.apiUrl||'',classCode:x.classCode||'',segments:[0,1,2].map(i=>({model:seg[i]?.model||'',keywords:Array.isArray(seg[i]?.keywords)?seg[i].keywords:[]}))};}
+
+function exportLesson(){
+ try{saveLesson();const data=JSON.stringify(lesson,null,2);const blob=new Blob([data],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=(lesson.title||'Retelling_Quest').replace(/[^a-z0-9_-]/gi,'_')+'_settings.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);$('teacherMsg').textContent='✅ 設定ファイルをダウンロードしました。生徒に配布してください。';}catch(e){$('teacherMsg').textContent='設定ファイルを作成できませんでした。';}
+}
+function importLesson(event){
+ const file=event.target.files&&event.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{try{lesson=normalize(JSON.parse(String(reader.result||'')));localStorage.setItem(KEY,JSON.stringify(lesson));$('studentTitle').textContent=lesson.title;$('studentNotice').textContent='✅ 先生の設定ファイルを読み込みました。MODE 1またはMODE 2を選んでください。';}catch(e){$('studentNotice').textContent='ファイルを読み込めませんでした。先生から正しいJSONファイルを受け取ってください。';}};reader.onerror=()=>$('studentNotice').textContent='ファイルの読み込みに失敗しました。';reader.readAsText(file);}
+function loadStudent(){try{const x=localStorage.getItem(KEY);if(x)lesson=normalize(JSON.parse(x));}catch(e){}$('studentTitle').textContent=lesson.title||'Retelling';$('studentNotice').textContent=lesson.segments.some(s=>s.model||s.keywords.length)?'授業設定を読み込みました。':'先生モードで授業設定を保存してください。';chooseMode(chosenMode);}
+function chooseMode(n){chosenMode=n;$('mode1Card').classList.toggle('selected',n===1);$('mode2Card').classList.toggle('selected',n===2);}
+function startLesson(){if(chosenMode===2&&!lesson.segments.some(s=>s.keywords.length)){alert('先生が段落ごとのキーワードを設定していません。');return;}if(!lesson.segments.some(s=>s.model||s.keywords.length)){alert('先生モードで授業設定を保存してください。');return;}stopRecording();$('resultCard').classList.add('hidden');$('practiceCard').classList.remove('hidden');$('practiceSegments').innerHTML=lesson.segments.map((s,i)=>`<div class="segment"><div class="segment-head"><span class="segment-no">第${i+1}段落</span><span class="timer" id="timer${i}">60秒</span></div>${chosenMode===2?`<div class="hintbox"><b>Use these keywords</b><div>${s.keywords.map(k=>`<span class="keyword">${esc(k)}</span>`).join('')||'<span class="small">キーワード未設定</span>'}</div></div>`:'<p class="small">紙に書いた自分のメモを見ながら話そう。</p>'}<label for="answer${i}">第${i+1}段落の回答（英語）</label><textarea id="answer${i}" placeholder="ここに文字起こしが入ります。直接入力してもOKです。"></textarea><div class="actions"><button id="record${i}" onclick="startRecording(${i})">🎙️ この段落を録音</button><button class="gray" onclick="stopRecording()" id="stop${i}" disabled>⏹ 終了</button><button class="secondary" onclick="clearAnswer(${i})">入力を消去</button></div><p id="status${i}" class="small status" role="status">話した後、文字起こしを確認して必要なら修正してください。</p></div>`).join('');$('pronScore').value=3;updatePronLabel();if($('privacyConfirm'))$('privacyConfirm').checked=false;$('practiceCard').scrollIntoView({behavior:'smooth',block:'start'});}
+function clearAnswer(i){if(recording&&activeSegment===i)stopRecording();$('answer'+i).value='';$('status'+i).textContent='入力を消去しました。';}
+function setRecordButtons(on,i){for(let j=0;j<3;j++){const a=$('record'+j),b=$('stop'+j);if(a)a.disabled=on;if(b)b.disabled=!(on&&j===i);}if(on&&$('record'+i))$('record'+i).disabled=true;}
+function startRecording(i){if(recording)stopRecording();const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){$('status'+i).textContent='このブラウザは音声認識に対応していません。英文を直接入力してください。';return;}activeSegment=i;finalTranscript='';remaining=60;$('timer'+i).textContent='60秒';const rec=new SR();activeRecognition=rec;rec.lang='en-US';rec.continuous=true;rec.interimResults=true;rec.maxAlternatives=1;rec.onresult=e=>{let interim='';for(let k=e.resultIndex;k<e.results.length;k++){const t=e.results[k][0]?.transcript||'';if(e.results[k].isFinal)finalTranscript+=' '+t;else interim+=' '+t;}$('answer'+i).value=(finalTranscript+' '+interim).trim().replace(/\s+/g,' ');};rec.onerror=e=>{if(activeRecognition!==rec)return;$('status'+i).textContent='音声認識エラー（'+e.error+'）。必要なら英文を直接入力してください。';};rec.onend=()=>{if(activeRecognition!==rec)return;if(recording){recording=false;clearInterval(timerId);timerId=null;setRecordButtons(false,i);$('status'+i).textContent='音声認識を終了しました。文字起こしを確認・修正してください。';}};try{rec.start();recording=true;setRecordButtons(true,i);$('status'+i).textContent='聞き取り中です。話し終えたら「終了」を押してください。';timerId=setInterval(()=>{remaining--;$('timer'+i).textContent=remaining+'秒';if(remaining<=0)stopRecording();},1000);}catch(e){recording=false;setRecordButtons(false,i);$('status'+i).textContent='マイクを開始できません。英文を直接入力してください。';}}
+function stopRecording(){if(timerId){clearInterval(timerId);timerId=null;}if(activeRecognition&&recording){const i=activeSegment;try{activeRecognition.stop();}catch(e){}recording=false;setRecordButtons(false,i);if($('status'+i))$('status'+i).textContent='音声認識を終了しました。文字起こしを確認・修正してください。';}else{recording=false;}}
+function updatePronLabel(){$('pronLabel').textContent=$('pronScore').value+' / 5';}
+function hasPersonalInfo(text){
+ const patterns=[/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i,/(?:\+81[-\s]?)?0\d{1,4}[-\s]?\d{1,4}[-\s]?\d{3,4}/, /\bmy name is\s+[A-Z][a-z]+/i, /\bmy phone number is\b/i, /\bmy address is\b/i, /\bI live at\s+/i, /〒\s?\d{3}-?\d{4}/];
+ return patterns.some(re=>re.test(text));
+}
+function safeText(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function renderAIResult(data,pron){
+ const segs=Array.isArray(data.segments)?data.segments:[];
+ const score=(n)=>Math.max(0,Math.min(100,Number(n)||0));
+ const box=(label,n)=>`<div class="score">${label}<b>${score(n)} / 100</b></div>`;
+ let html=`<div class="advice"><b>総合評価：${score(data.totalScore)} / 100</b><br>${safeText(data.summary||'3段落のリテリングを評価しました。')}<br><span class="small">発音：自己評価 ${pron} / 5（音声そのものはAIに送信していません）</span></div>`;
+ if(Array.isArray(data.strengths)&&data.strengths.length) html+=`<h3 style="margin-top:16px">よかったところ</h3><ul>${data.strengths.map(x=>`<li>${safeText(x)}</li>`).join('')}</ul>`;
+ segs.forEach((r,i)=>{
+  html+=`<div class="result-segment"><b>第${i+1}段落：${score(r.score)} / 100</b><div class="scoregrid" style="grid-template-columns:repeat(4,1fr);margin-top:9px">${box('内容',r.contentScore)}${box('文法',r.grammarScore)}${box('語彙',r.vocabularyScore)}${box('伝わりやすさ',r.clarityScore)}</div><p>${safeText(r.feedback||'')}</p>`;
+  if(Array.isArray(r.corrections)&&r.corrections.length){html+='<h4>文法・表現の直し方</h4>';r.corrections.forEach(c=>{html+=`<p class="sample"><b>元の文：</b>${safeText(c.original)}<br><b>修正例：</b>${safeText(c.corrected)}<br><b>理由：</b>${safeText(c.reason)}</p>`;});}
+  if(Array.isArray(r.betterExpressions)&&r.betterExpressions.length){html+='<h4>もっと自然にする表現</h4>';r.betterExpressions.forEach(c=>{html+=`<p class="sample">${safeText(c.original)} → <b>${safeText(c.replacement)}</b><br>${safeText(c.reason)}</p>`;});}
+  if(Array.isArray(r.missingIdeas)&&r.missingIdeas.length)html+=`<p><b>補える内容：</b>${safeText(r.missingIdeas.join('／'))}</p>`;
+  if(r.modelComparison)html+=`<p class="small"><b>模範解答との比較：</b>${safeText(r.modelComparison)}</p>`;
+  html+='</div>';
+ });
+ if(Array.isArray(data.nextSteps)&&data.nextSteps.length)html+=`<div class="advice"><b>次に意識すること</b><ul>${data.nextSteps.map(x=>`<li>${safeText(x)}</li>`).join('')}</ul></div>`;
+ html+='<p class="small">※AIによる学習支援の評価です。採点は必ずしも完全ではありません。特に意味の解釈や文法の指摘は、先生が必要に応じて確認してください。</p>';
+ $('aiResult').innerHTML=html;
+}
+async function evaluateAll(){
+ if(recording){alert('録音を終了してから採点してください。');return;}
+ const answers=[0,1,2].map(i=>$('answer'+i)?.value.trim()||'');
+ if(!answers.some(Boolean)){alert('少なくとも1段落の英文を入力してください。');return;}
+ if(!$('privacyConfirm').checked){alert('個人情報が含まれていないことを確認して、チェックを入れてください。');return;}
+ if(!lesson.apiUrl){alert('先生モードでAI評価サーバーURLを設定し、授業設定を保存・配布してください。');return;}
+ const allText=answers.join('\n');
+ if(hasPersonalInfo(allText)){alert('個人情報らしき記述が見つかりました。氏名・連絡先などを削除してから再度お試しください。');return;}
+ const payload={classCode:lesson.classCode||'',answers,segments:lesson.segments.map(s=>({model:s.model,keywords:s.keywords})),level:'高校英語・英検3級程度を目安'};
+ $('practiceStatus').textContent='AIが3段落を評価しています。少し待ってね…';
+ const btn=document.querySelector('#practiceCard button[onclick="evaluateAll()"]');if(btn)btn.disabled=true;
+ try{
+  const response=await fetch(lesson.apiUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload),redirect:'follow'});
+  if(!response.ok)throw new Error('サーバーとの通信に失敗しました（HTTP '+response.status+'）。');
+  const result=await response.json();
+  if(!result.ok)throw new Error(result.error||'AI評価に失敗しました。');
+  renderAIResult(result.result,Number($('pronScore').value));
+  $('practiceCard').classList.add('hidden');$('resultCard').classList.remove('hidden');$('resultCard').scrollIntoView({behavior:'smooth',block:'start'});
+  $('practiceStatus').textContent='';
+ }catch(e){$('practiceStatus').textContent='AI評価を完了できませんでした：'+e.message+' URL・クラスコード・Apps Scriptの公開設定を確認してください。';}
+ finally{if(btn)btn.disabled=false;}
+}
+function retryLesson(){startLesson();}function finishLesson(){stopRecording();$('practiceCard').classList.add('hidden');$('resultCard').classList.add('hidden');$('studentNotice').textContent='おつかれさま！回答はこの画面を閉じると消えます。';$('studentNotice').scrollIntoView({behavior:'smooth',block:'center'});}
+loadTeacher();
+</script></body></html>
